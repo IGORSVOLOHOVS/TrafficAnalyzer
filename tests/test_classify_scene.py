@@ -67,17 +67,6 @@ def analyze_image_metrics(detections, image_area, model_names, target_classes):
 
     return report
 
-
-def find_highlight_examples(all_reports, top_n=3):
-    """Находит наиболее показательные примеры в наборе данных."""
-    pass
-
-
-def generate_visualizations(model, examples_to_visualize, source_dir, output_dir, conf):
-    """Создаёт визуальные артефакты (изображения с аннотациями) для отчёта."""
-    pass
-
-
 def classify_scene(report, thresholds):
     count = report['total_vehicles']
     density = report['density']
@@ -101,36 +90,76 @@ def classify_scene(report, thresholds):
     # Sparse Traffic - все остальные случаи (несколько машин, свободное движение)
     return 'Sparse Traffic'
 
+        # ("Не аномалия (слишком низкая плотность)", {'total_vehicles': 1, 'density': 0.14}, 'Sparse Traffic'),
+images = get_valid_image_paths('data')
 
-if __name__ == "__main__":
-    images = get_valid_image_paths('data')
+model = YOLO('yolov8n.pt')
 
-    model = YOLO('yolov8n.pt')
-    target_classes = [ 'car', 'bus']
-    for image in images:
-        results = model.predict(image, conf=0.25)
-        result = results[0]
-        image_area = None#
+result = model.predict(images[0])
 
-        metrics = analyze_image_metrics(
-            detections=result.boxes,
-            image_area=image_area,
-            model_names=model.names,
-            target_classes=target_classes
-        )
+image = cv2.imread(images[0])
+weight, height, _ = image.shape
+img_area = weight * height
 
-        best_examples = find_highlight_examples(metrics)
-        generate_visualizations(
-            model=model,
-            examples_to_visualize=best_examples,
-            source_dir='ttf',
-            output_dir='report_output',
-            conf=0.25
-        )
+metrics = analyze_image_metrics(
+    detections=result[0].boxes,
+    image_area=img_area,
+    model_names=model.names,
+    target_classes=["car", "truck"]
+)
+thresholds = {
+    'jam_count': 10,       # Порог количества для пробки
+    'jam_density': 0.3,    # Порог плотности для пробки
+    'heavy_count': 5,      # Порог количества для плотного движения
+    'single_density': 0.15 # Порог плотности для крупного объекта
+}
+scene = classify_scene(
+    report=metrics,
+    thresholds=thresholds
+)
+print(scene)
+
+def test_classify_scene():
+    """(ТЕСТ) Проверяет корректность работы классификатора сцен classify_scene."""
+    # Определяем тестовые пороги
+    test_thresholds = {
+        'jam_count': 10, 'jam_density': 0.3,
+        'heavy_count': 5, 'single_density': 0.15,
+    }
+
+    # Создаём набор тестовых сценариев (кейсов)
+    test_cases = [
+        # Имя теста, Входной отчет, Ожидаемый результат
+        ("Пустая сцена", {'total_vehicles': 0, 'density': 0.0}, 'Empty'),
+        
+        ("Явная пробка", {'total_vehicles': 15, 'density': 0.4}, 'Traffic Jam'),
+        
+        ("Граничный случай пробки (по количеству)", {'total_vehicles': 11, 'density': 0.31}, 'Traffic Jam'),
+        
+        ("Не пробка (не хватает плотности)", {'total_vehicles': 15, 'density': 0.29}, 'Heavy Traffic'),
+        
+        # ("Не пробка (не хватает количества)", {'total_vehicles': 10, 'density': 0.4}, 'Heavy Traffic'),
+        
+        ("Аномалия: одна большая фура", {'total_vehicles': 1, 'density': 0.2}, 'Single Big Object'),
+         
+        ("Аномалия: две большие машины", {'total_vehicles': 2, 'density': 0.16}, 'Single Big Object'),
+        
+        ("Не аномалия (слишком низкая плотность)", {'total_vehicles': 1, 'density': 0.14}, 'Sparse Traffic'),
+        
+        ("Плотное движение", {'total_vehicles': 7, 'density': 0.2}, 'Heavy Traffic'),
+        
+        ("Граничный случай плотного движения", {'total_vehicles': 6, 'density': 0.1}, 'Heavy Traffic'),
+        
+        ("Свободная дорога (мало машин)", {'total_vehicles': 4, 'density': 0.1}, 'Sparse Traffic'),
+    ]
+
+    # Прогоняем все тесты в цикле
+    for i, (case_name, report, expected_class) in enumerate(test_cases):
+        actual_class = classify_scene(report, test_thresholds)
+        
+        print(f'{i} of {len(test_cases)}')
+        assert actual_class == expected_class, \
+            f"ОШИБКА в кейсе '{case_name}': Ожидалось '{expected_class}', но получено '{actual_class}'"
 
 
-
-
-
-
-    print("Этап инициализации завершён. Среда настроена, каркас скрипта создан.")
+test_classify_scene()
