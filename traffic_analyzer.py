@@ -5,7 +5,6 @@ import numpy as np
 from fpdf import FPDF
 from fpdf.enums import XPos, YPos
 
-
 def get_valid_image_paths(source_dir: str) -> list[str]:
     image_paths = []
     allowed_extensions = {'.jpg', '.jpeg', '.png'}
@@ -14,10 +13,14 @@ def get_valid_image_paths(source_dir: str) -> list[str]:
     if files is None or len(files) == 0:
         raise Exception("files is None or len(files) > 0")
     
-    allowed_extensions_tuple = tuple(allowed_extensions)
-    for file in files:
-        if file.endswith(allowed_extensions_tuple):
-            image_paths.append(file)
+    for file in sorted(files):
+        fname, fext = os.path.splitext(file)
+        if fext.lower() in allowed_extensions:
+            full_path = os.path.join(source_dir, file)
+            if cv2.imread(full_path) is None:
+                continue
+            image_paths.append(full_path)
+
     
     return image_paths 
 
