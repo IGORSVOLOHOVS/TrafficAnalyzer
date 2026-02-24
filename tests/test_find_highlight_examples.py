@@ -1,3 +1,5 @@
+
+
 import os, cv2, csv, argparse, datetime
 from ultralytics import YOLO
 from tqdm import tqdm
@@ -90,12 +92,6 @@ def find_highlight_examples(all_reports, top_n=3):
 
     return {r['filename']: r for r in sort_report[:top_n]}
 
-
-def generate_visualizations(model, examples_to_visualize, source_dir, output_dir, conf):
-    """Создаёт визуальные артефакты (изображения с аннотациями) для отчёта."""
-    pass
-
-
 def classify_scene(report, thresholds):
     count = report['total_vehicles']
     density = report['density']
@@ -120,78 +116,41 @@ def classify_scene(report, thresholds):
     return 'Sparse Traffic'
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Инструмент для анализа дорожного трафика на основе YOLOv8.",
-        formatter_class=argparse.RawTextHelpFormatter 
-    )
-    parser.add_argument(
-        "mode", 
-        choices=['experiment', 'report'],
-        help="Режим работы скрипта:\n"
-             " 'experiment' - запуск одного прогона для сбора CSV-статистики.\n"
-             " 'report' - полный цикл анализа с генерацией PDF-отчёта."
-    )
-    parser.add_argument(
-        "--conf", 
-        type=float, 
-        default=0.45, 
-        help="Порог уверенности (confidence) для детекции. (По умолчанию: 0.45)"
-    )
+def test_find_highlight_examples():
+    # Создаём искусственный набор данных (mock data)
+    mock_reports = [
+        # Лидер по количеству
+        {'filename': 'crowded.jpg', 'total_vehicles': 20, 'density': 0.3},
+        # Просто средний файл
+        {'filename': 'normal_1.jpg', 'total_vehicles': 8, 'density': 0.15},
+        # Лидер по плотности
+        {'filename': 'dense.jpg', 'total_vehicles': 5, 'density': 0.6},
+        # Второй по количеству
+        {'filename': 'crowded_2.jpg', 'total_vehicles': 18, 'density': 0.25},
+        # Второй по плотности и третий по количеству => топ по обоим критериям
+        {'filename': 'dense_and_crowded.jpg', 'total_vehicles': 15, 'density': 0.5},
+        # Ещё один средний файл
+        {'filename': 'normal_2.jpg', 'total_vehicles': 2, 'density': 0.1},
+        # Третий по плотности
+        {'filename': 'dense_3.jpg', 'total_vehicles': 4, 'density': 0.4}
+    ]
 
-    args = parser.parse_args()
+    top_examples = find_highlight_examples(mock_reports, top_n=4)
 
-    # Выбор режима работы на основе аргументов
+    expected_filenames = {'crowded.jpg', 'crowded_2.jpg', 'normal_1.jpg', 'dense_and_crowded.jpg'}
 
-    if args.mode == 'experiment':
-        # Определяем константы для этого режима
-        TARGET_CLASSES = ['car', 'truck']
-        
-        # Получаем список валидных изображений
-        image_paths = get_valid_image_paths('data')
+    assert len(top_examples) == 4, \
+        f"ОШИБКА: Ожидалось 4 уникальных примера, но получено {len(top_examples)}"
 
-        model = YOLO('yolov8n.pt')
-        
-        # Готовимся собирать отчёты со всех изображений
-        all_reports = []
-        
-        # Основной цикл обработки, обёрнутый в tqdm для наглядности
-        for path in tqdm(image_paths, desc=f"Анализ [conf={args.conf}]"):
-            try:
-                # Читаем изображение и получаем его размеры
-                image = cv2.imread(path)
-                h, w, _ = image.shape
-                
-                # Запускаем инференс с заданным `conf`
-                results = model(image, conf=args.conf, verbose=False)
-                
-                # Извлекаем метрики из результатов детекции
-                metrics = analyze_image_metrics(
-                    detections=results[0].boxes, 
-                    image_area=h*w, 
-                    model_names=model.names, 
-                    target_classes=TARGET_CLASSES
-                )
-                
-                # Дополняем отчёт информацией об изображении
-                metrics['filename'] = os.path.basename(path)
-                all_reports.append(metrics)
-            except Exception as e:
-                print(f"Критическая ошибка при обработке файла {path}: {e}")
-        
-        # Сохранение результатов в CSV-файл
-        if all_reports:
-            # Создаём папку для экспериментов, если она ещё не существует
-            os.makedirs('experiments', exist_ok=True)
-            # Имя файла будет отражать параметр, с которым проводился эксперимент
-            csv_path = os.path.join('experiments', f'analysis_conf_{args.conf}.csv')
+    result_filenames = set(top_examples.keys())
+    assert result_filenames == expected_filenames, \
+        f"ОШИБКА: Набор файлов не совпадает. Найдено: {result_filenames}, Ожидалось: {expected_filenames}"
+ 
+    small_reports = [{'filename': 'a.jpg', 'total_vehicles': 1, 'density': 0.1}]
+    top_small = find_highlight_examples(small_reports, top_n=3)
+    assert len(top_small) == 1, \
+        "ОШИБКА: Неверная обработка, когда отчётов меньше, чем top_n"
+    assert 'a.jpg' in top_small, \
+        "ОШИБКА: Потерян единственный отчёт при обработке малого набора"
 
-            with open(csv_path, 'w', newline='', encoding='utf-8') as f:
-                # Заголовки берём из ключей первого словаря в списке
-                writer = csv.DictWriter(f, fieldnames=all_reports[0].keys())
-                writer.writeheader()
-                writer.writerows(all_reports)
-
-    elif args.mode == 'report':
-        # Этот блок реализуем на следующих шагах
-        pass
+test_find_highlight_examples()
