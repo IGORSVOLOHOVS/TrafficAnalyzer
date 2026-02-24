@@ -131,8 +131,6 @@ def generate_visualizations(model, examples_to_visualize, source_dir, output_dir
     return vis_report
 
 
-
-
 def classify_scene(report, thresholds):
     count = report['total_vehicles']
     density = report['density']
@@ -179,7 +177,12 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Выбор режима работы на основе аргументов
-
+    thresholds = {
+        'jam_count': 10,       # Порог количества для пробки
+        'jam_density': 0.3,    # Порог плотности для пробки
+        'heavy_count': 5,      # Порог количества для плотного движения
+        'single_density': 0.15 # Порог плотности для крупного объекта
+    }
     if args.mode == 'experiment':
         # Определяем константы для этого режима
         TARGET_CLASSES = ['car', 'truck']
@@ -209,6 +212,8 @@ if __name__ == "__main__":
                     model_names=model.names, 
                     target_classes=TARGET_CLASSES
                 )
+
+                metrics['scene'] = classify_scene(metrics, thresholds)
                 
                 # Дополняем отчёт информацией об изображении
                 metrics['filename'] = os.path.basename(path)
@@ -228,6 +233,20 @@ if __name__ == "__main__":
                 writer = csv.DictWriter(f, fieldnames=all_reports[0].keys())
                 writer.writeheader()
                 writer.writerows(all_reports)
+        
+        highlight_examples = find_highlight_examples(
+            all_reports=all_reports,
+            top_n=3
+        )
+
+        vis_report = generate_visualizations(
+            model=model,
+            examples_to_visualize=highlight_examples,
+            source_dir='data',
+            output_dir='report_output',
+            conf=0.25
+        )
+        print(vis_report)
 
     elif args.mode == 'report':
         # Этот блок реализуем на следующих шагах
