@@ -105,7 +105,7 @@ def generate_visualizations(model, examples_to_visualize, source_dir, output_dir
         report = examples_to_visualize[example]
         cv2.putText(
             img,
-            report['scene'],
+            report['scene_type'],
             (10, 40),
             cv2.FONT_HERSHEY_SIMPLEX,
             1, (0, 255, 0), 2
@@ -116,7 +116,7 @@ def generate_visualizations(model, examples_to_visualize, source_dir, output_dir
 
         stats_text = (
             f"Имя файла: {report['filename']}\n"
-            f"Тип сцены: {report['scene']}\n"
+            f"Тип сцены: {report['scene_type']}\n"
             f"Всего ТС: {report['total_vehicles']}\n"
             f"  - Легковые автомобили: {report.get('car', 0)}\n"
             f"  - Грузовики: {report.get('truck', 0)}\n"
@@ -125,7 +125,7 @@ def generate_visualizations(model, examples_to_visualize, source_dir, output_dir
         )
         vis_report.append({
             'path': full_img_out_path,
-            'report': example,
+            'report': report,
             'stats': stats_text
         })
     return vis_report
@@ -156,6 +156,62 @@ def classify_scene(report, thresholds):
     # Sparse Traffic - все остальные случаи (несколько машин, свободное движение)
     return 'Sparse Traffic'
 
+class PDFReport(FPDF):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Пробуем использовать красивые шрифты, если они доступны (их мы скачивали в нашу папку ttf/)
+        regular_font_path = os.path.join('ttf', 'DejaVuSans.ttf')
+        bold_font_path = os.path.join('ttf', 'DejaVuSans-Bold.ttf')
+
+        if os.path.exists(regular_font_path) and os.path.exists(bold_font_path):
+            self.add_font('DejaVu', '', regular_font_path)
+            self.add_font('DejaVu', 'B', bold_font_path)
+
+            self.font_family = 'DejaVu'
+        else:
+            # Если шрифты не найдены, используем стандартный
+            self.font_family = 'Arial'
+
+    def header(self):
+        """Создаёт шапку для каждой страницы"""
+        self.set_font(self.font_family, 'B', 15)
+        self.cell(0, 10, 'Аналитический отчёт по дорожной обстановке', border=0, new_x=XPos.LMARGIN, new_y=YPos.NEXT, align='C')
+        self.set_font(self.font_family, '', 8)
+        self.cell(0, 5, f'Дата генерации: {datetime.date.today().strftime("%d.%m.%Y")}', 0, 1, 'C')
+        self.ln(10)
+
+    def footer(self):
+        """Добавляет номера страниц в подвале"""
+        self.set_y(-15)
+        self.set_font(self.font_family, 'B', 8)
+        self.cell(0, 10, f'Страница {self.page_no()}', border=0, new_x=XPos.RIGHT, new_y=YPos.TOP, align='C')
+
+    def chapter_title(self, title):
+        """Создаёт заголовок раздела"""
+        self.set_font(self.font_family, 'B', 12)
+        self.cell(0, 10, title, border=0, new_x=XPos.LMARGIN, new_y=YPos.NEXT, align='L')
+        self.ln(5)
+
+    def chapter_body(self, body):
+        """Добавляет основной текст"""
+        self.set_font(self.font_family, '', 10)
+        self.multi_cell(0, 5, body)
+        self.ln()
+    
+    def add_image_section(self, title, image_path, stats_text):
+        """Добавляет секцию с изображением и статистикой"""
+        self.add_page()
+        self.chapter_title(title)
+
+        # Центрируем изображение на странице
+        image_width = 100
+        page_width = self.w - 2 * self.l_margin
+        x_position = (page_width - image_width) / 2 + self.l_margin
+        self.image(image_path, x=x_position, y=None, w=image_width)
+        self.ln(5)
+        self.set_font(self.font_family, '', 10) 
+        self.multi_cell(0, 5, stats_text)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -178,57 +234,104 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    # Выбор режима работы на основе аргументов
-
     if args.mode == 'experiment':
-        # Определяем константы для этого режима
+        print(f"experiment mode")
+
         TARGET_CLASSES = ['car', 'truck']
-        
-        # Получаем список валидных изображений
+
         image_paths = get_valid_image_paths('data')
 
         model = YOLO('yolov8n.pt')
         
-        # Готовимся собирать отчёты со всех изображений
         all_reports = []
-        
-        # Основной цикл обработки, обёрнутый в tqdm для наглядности
+
         for path in tqdm(image_paths, desc=f"Анализ [conf={args.conf}]"):
             try:
-                # Читаем изображение и получаем его размеры
                 image = cv2.imread(path)
                 h, w, _ = image.shape
                 
-                # Запускаем инференс с заданным `conf`
                 results = model(image, conf=args.conf, verbose=False)
                 
-                # Извлекаем метрики из результатов детекции
-                metrics = analyze_image_metrics(
-                    detections=results[0].boxes, 
-                    image_area=h*w, 
-                    model_names=model.names, 
-                    target_classes=TARGET_CLASSES
-                )
+                img_area = w * h
+                metrics = analyze_image_metrics(results[0].boxes, img_area, model.names, TARGET_CLASSES)
                 
-                # Дополняем отчёт информацией об изображении
                 metrics['filename'] = os.path.basename(path)
                 all_reports.append(metrics)
             except Exception as e:
-                print(f"Критическая ошибка при обработке файла {path}: {e}")
-        
-        # Сохранение результатов в CSV-файл
+                print(f"\nКритическая ошибка при обработке файла {path}: {e}")
+
         if all_reports:
-            # Создаём папку для экспериментов, если она ещё не существует
             os.makedirs('experiments', exist_ok=True)
-            # Имя файла будет отражать параметр, с которым проводился эксперимент
             csv_path = os.path.join('experiments', f'analysis_conf_{args.conf}.csv')
 
             with open(csv_path, 'w', newline='', encoding='utf-8') as f:
-                # Заголовки берём из ключей первого словаря в списке
                 writer = csv.DictWriter(f, fieldnames=all_reports[0].keys())
                 writer.writeheader()
                 writer.writerows(all_reports)
 
     elif args.mode == 'report':
-        # Этот блок реализуем на следующих шагах
-        pass
+        print(f"report mode")
+
+        THRESHOLDS = {
+            'jam_count': 10, 'jam_density': 0.3,
+            'heavy_count': 5, 'single_density': 0.15,
+        }
+        TARGET_CLASSES = ['car', 'truck']
+        SOURCE_DIR = 'data'
+        REPORT_OUTPUT_DIR = 'report_output'
+
+        model = YOLO('yolov8n.pt')
+        image_paths = get_valid_image_paths(SOURCE_DIR)
+        
+        all_reports = []
+        for path in tqdm(image_paths, desc="Анализ изображений"):
+            try:
+                image = cv2.imread(path)
+                h, w, _ = image.shape
+                results = model(image, conf=args.conf, verbose=False)
+                img_area = w * h
+                metrics = analyze_image_metrics(results[0].boxes, img_area, model.names, TARGET_CLASSES)
+                metrics['scene_type'] = classify_scene(metrics, THRESHOLDS)
+                metrics['filename'] = os.path.basename(path)
+                all_reports.append(metrics)
+            except Exception as e:
+                print(f"\nКритическая ошибка при обработке файла {path}: {e}")
+
+        if not all_reports:
+            exit()
+
+        top_examples = find_highlight_examples(all_reports)
+        annotated_examples = generate_visualizations(model, top_examples, SOURCE_DIR, REPORT_OUTPUT_DIR, args.conf)
+
+        pdf = PDFReport()
+        pdf.add_page()
+
+        pdf.chapter_title("1. Общая сводка по проанализированным данным")
+        scene_types = [r['scene_type'] for r in all_reports]
+        summary_text = (
+            f"Всего обработано изображений: {len(all_reports)}\n"
+            f"Использованный порог уверенности: {args.conf}\n\n"
+            f"ОБЩАЯ СТАТИСТИКА ТРАНСПОРТА:\n"
+            f"  - Всего найдено ТС: {sum(r['total_vehicles'] for r in all_reports)}\n"
+            f"  - Легковые автомобили: {sum(r.get('car', 0) for r in all_reports)}\n"
+            f"  - Грузовики: {sum(r.get('truck', 0) for r in all_reports)}\n\n"
+            f"КЛАССИФИКАЦИЯ СЦЕН:\n"
+            f"  - Пробка/Затор: {scene_types.count('Traffic Jam')} изображений\n"
+            f"  - Плотное движение: {scene_types.count('Heavy Traffic')} изображений\n"
+            f"  - Свободная дорога: {scene_types.count('Sparse Traffic')} изображений\n"
+            f"  - Аномалии (крупный объект): {scene_types.count('Single Big Object')} изображений\n"
+            f"  - Пустые сцены: {scene_types.count('Empty')} изображений"
+        )
+        pdf.chapter_body(summary_text)
+
+        if annotated_examples:
+            pdf.chapter_title("Примеры показательных сцен")
+            sorted_examples = sorted(annotated_examples, key=lambda x: x['report']['density'], reverse=True)
+            for i, example in enumerate(sorted_examples):
+                title = f"Пример #{i+1}: {example['report']['filename']}"
+                pdf.add_image_section(title, example['path'], example['stats'])
+
+        pdf_output_path = os.path.join(REPORT_OUTPUT_DIR, "traffic_analysis_report.pdf")
+        pdf.output(pdf_output_path)
+
+        print(f"Результат сохранён в: {pdf_output_path}")

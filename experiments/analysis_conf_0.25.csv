@@ -1,0 +1,28 @@
+total_vehicles,density,avg_bbox_area,car,truck,scene,filename
+18,0.1371,10885.35,18,0,Heavy Traffic,11.png
+39,0.9042,4790.73,38,1,Traffic Jam,22.png
+25,1.1955,72132.68,24,1,Traffic Jam,33.png
+8,1.8557,95014.02,7,1,Heavy Traffic,img1.jpg
+3,0.4336,59197.02,1,2,Sparse Traffic,img10.jpg
+0,0,0,0,0,Empty,img11.jpg
+1,0.0408,16695.18,0,1,Sparse Traffic,img12.jpg
+0,0,0,0,0,Empty,img13.jpg
+1,0.0965,39510.81,1,0,Sparse Traffic,img14.jpg
+1,0.3064,125495.98,0,1,Single Big Object,img15.jpg
+1,0.5495,225075.39,0,1,Single Big Object,img16.jpg
+0,0,0,0,0,Empty,img17.jpg
+3,0.5747,78465.04,0,3,Sparse Traffic,img18.jpg
+0,0,0,0,0,Empty,img19.jpg
+2,0.1606,32896.57,1,1,Single Big Object,img2.jpeg
+4,0.5936,60782.74,1,3,Sparse Traffic,img20.jpg
+6,0.4735,32323.75,3,3,Heavy Traffic,img21.jpg
+7,0.4527,26492.17,5,2,Heavy Traffic,img22.jpg
+5,0.26,21300.33,3,2,Heavy Traffic,img23.jpg
+0,0,0,0,0,Empty,img24.png
+5,0.1788,14645.81,3,2,Heavy Traffic,img3.jpg
+3,0.258,35225.77,2,1,Sparse Traffic,img4.jpg
+0,0,0,0,0,Empty,img5.jpg
+0,0,0,0,0,Empty,img6.jpg
+0,0,0,0,0,Empty,img7.jpg
+2,0.0248,5088.12,1,1,Sparse Traffic,img8.jpg
+1,0.5959,244072.37,0,1,Single Big Object,img9.jpg
