@@ -1,0 +1,92 @@
+# pyproject.toml - Python's own file for traffic-analyzer.
+#
+# It pins the toolchain. `recipe.ps1 test` runs pytest, mypy, ruff check and ruff
+# format, and every setting those four read is here. There are no task-runner
+# sections: the recipe's verbs are the tasks.
+
+[build-system]
+# Pinned with a version, not a bare name: an unpinned backend changes what
+# `recipe.ps1 build` produces without anyone editing this file.
+requires = ["setuptools==80.9.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "traffic-analyzer"
+# This must equal $Version in recipe.ps1: `recipe.ps1 test` fails when they disagree.
+version = "1.0.0"
+description = "Console tool that counts vehicles in road images with YOLOv8 and writes a CSV or a PDF report."
+readme = "README.md"
+license = "MIT"
+# 3.12, not 3.13: these are the versions requirements.txt pinned, carried over unchanged,
+# and torch 2.5.1 and numpy 1.26.0 have no Windows wheels for 3.13.
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "torch==2.5.1",
+    "torchvision==0.20.1",
+    "ultralytics==8.0.196",
+    "opencv-python==4.8.1.78",
+    "tqdm==4.66.1",
+    "numpy==1.26.0",
+    "fpdf2==2.7.6",
+]
+
+[dependency-groups]
+# `uv run` installs this group by default, so test.yaml's Runner health step finds
+# ruff, pytest and mypy through `uv run --frozen <tool> --version`.
+dev = [
+    "ruff==0.16.1",
+    "mypy==2.3.0",
+    "pytest==8.4.2",
+    "pytest-cov==5.0.0",
+    "coverage==7.15.2",
+]
+
+[tool.setuptools]
+# One module at the root, beside data folders that must stay out of the wheel.
+py-modules = ["traffic_analyzer"]
+
+[tool.uv]
+# The tests and `recipe.ps1 run` use the source tree, so uv does not install the project.
+package = false
+
+[tool.ruff]
+# Ruff refuses to run at all when its own version is not this one.
+required-version = "0.16.1"
+target-version = "py312"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
+
+[tool.ruff.lint.per-file-ignores]
+# Measured on adoption: one hit each, in the tests as they came. Neither is in shipped code.
+"tests/test_analyze_image_metrics.py" = ["E402"]
+"tests/test_get_valid_image_paths.py" = ["F841"]
+
+[tool.ruff.format]
+line-ending = "lf"
+# Section 7 prints these files verbatim, so the formatter must not touch them.
+exclude = [".claude/**", "tests/manual/serve.py", "tools/wiki.py"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+# The floor is 0 because that is what the suite measures: see the R-12 exception.
+addopts = "-q --cov=. --cov-report=term --cov-fail-under=0"
+
+[tool.coverage.run]
+# A folder, not a module name: the suite never imports traffic_analyzer, and only a
+# folder makes coverage report a file nothing imported, at 0%, instead of leaving it out.
+source = ["."]
+omit = ["tests/*", "tools/*", ".claude/*", ".venv/*", "build/*", "dist/*"]
+
+[tool.mypy]
+python_version = "3.12"
+files = ["traffic_analyzer.py", "tools"]
+
+# THE SILENCE LIST, measured on adoption: it only ever gets shorter (R-12).
+# 3 names, all third-party, none with a py.typed marker at the pinned version.
+# None of this repository's own code is silenced.
+[[tool.mypy.overrides]]
+module = ["fpdf.*", "tqdm.*", "ultralytics.*"]
+ignore_missing_imports = true

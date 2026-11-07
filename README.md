@@ -1,62 +1,30 @@
-# TrafficAnalyzer
+# traffic-analyzer
 
-TrafficAnalyzer is a tool for analyzing road traffic based on the YOLOv8 object detection model. It can process a set of images to detect vehicles (cars and trucks), calculate metrics like vehicle count and traffic density, and accurately classify the scene type (e.g., Traffic Jam, Heavy Traffic, Sparse Traffic, Single Big Object, Empty).
+A console tool that analyses road traffic in still images with the YOLOv8 object detector. It counts cars and trucks in each image, measures how much of the frame they cover, and sorts the scene into one of five types: Traffic Jam, Heavy Traffic, Sparse Traffic, Single Big Object or Empty.
 
-The project is capable of generating detailed PDF reports with annotated image highlights or dumping analytical data into CSV format for further research.
+It reads the images in `data/` and has two modes. `experiment` writes the metrics of every image to a CSV file in `experiments/`. `report` also picks the most telling images, draws the detections on them and builds a PDF in `report_output/`.
 
-## Project Structure
+The program's own messages and the PDF are in Russian. The PDF uses the DejaVu fonts in `ttf/`.
 
-- `data/` - Source images for traffic analysis. Place your `.jpg`, `.jpeg`, or `.png` images here.
-- `experiments/` - Output directory for the `experiment` mode. Results are saved here as `.csv` files.
-- `report_output/` - Output directory for the `report` mode. Detailed PDF reports and annotated image highlights are saved here.
-- `tests/` - Contains unit tests to ensure the metrics calculation, scene classification, and highlighting logic work correctly.
-- `traffic_analyzer.py` - The main executable script.
+## Use
 
-## Requirements and Installation
-
-Make sure your environment has Python installed. Install all the required packages using `requirements.txt`:
-
-```bash
-pip install -r requirements.txt
+```powershell
+.\recipe.ps1 run experiment --conf 0.45
+.\recipe.ps1 run report --conf 0.45
 ```
 
-**Key dependencies:**
-- `ultralytics` (YOLOv8)
-- `opencv-python`
-- `numpy`
-- `fpdf2`
-- `tqdm`
-- `torch`, `torchvision`
+`docs/install.md` says what to install and `docs/manual.md` describes both modes. `.\recipe.ps1 test` runs the tests, mypy and ruff.
 
-*(Optional)* For the best-looking PDF reports, the tool looks for `DejaVu` fonts inside a `ttf/` directory. If not present, it will fallback to the standard Arial font.
+## What is here
 
-## Usage
+- `traffic_analyzer.py` is the whole program.
+- `data/` holds the source images, `experiments/` and `report_output/` the results of earlier runs.
+- `tests/` holds the tests. Each one carries its own copy of the functions it checks, so they do not exercise `traffic_analyzer.py` itself.
 
-The `traffic_analyzer.py` script requires you to choose a mode (`experiment` or `report`). You can also specify the confidence threshold for the YOLO model.
+## Licence
 
-```bash
-python traffic_analyzer.py <mode> [--conf CONFIDENCE_THRESHOLD]
-```
+MIT, see `LICENSE`.
 
-### Modes
+## Lab requirements
 
-1. **`report` mode**
-   This mode will perform a full analysis of the images in the `data/` folder. It will categorize the scene, highlight the most distinct examples (densest, most objects), generate visual annotations, and compile everything into a comprehensive PDF report saved in the `report_output/` directory.
-   
-   *Example:*
-   ```bash
-   python traffic_analyzer.py report --conf 0.45
-   ```
-
-2. **`experiment` mode**
-   This mode is meant for rapid statistical analysis. It runs inference on all images in `data/` and saves the resulting metrics to a CSV file in the `experiments/` directory for further analysis. Visual annotations and PDFs are *not* generated in this mode.
-   
-   *Example:*
-   ```bash
-   python traffic_analyzer.py experiment --conf 0.45
-   ```
-
-### Command Line Arguments
-
-- `mode`: `report` | `experiment`
-- `--conf`: Confidence threshold for the YOLO model. Float between 0 and 1. (Default: 0.45)
+This repository complies with [revision 4.0.0](http://127.0.0.1:3000/igors-lab/software-requirements/src/tag/v4.0.0/BEST_REQUIREMENTS.md) of the lab requirements, except R-02 (#8), R-09 (#9), R-12 (#10), R-37 (#11), R-41 (#12), R-42 (#13).
