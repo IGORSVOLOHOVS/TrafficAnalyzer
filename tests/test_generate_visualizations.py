@@ -1,18 +1,20 @@
-import os, cv2, csv, argparse, datetime
-from ultralytics import YOLO
+import argparse
+import csv
+import os
+
+import cv2
 from tqdm import tqdm
-import numpy as np
-from fpdf import FPDF
-from fpdf.enums import XPos, YPos
+from ultralytics import YOLO
+
 
 def get_valid_image_paths(source_dir: str) -> list[str]:
     image_paths = []
-    allowed_extensions = {'.jpg', '.jpeg', '.png'}
+    allowed_extensions = {".jpg", ".jpeg", ".png"}
 
     files = os.listdir(source_dir)
     if files is None or len(files) == 0:
         raise Exception("files is None or len(files) > 0")
-    
+
     for file in sorted(files):
         fname, fext = os.path.splitext(file)
         if fext.lower() in allowed_extensions:
@@ -21,8 +23,8 @@ def get_valid_image_paths(source_dir: str) -> list[str]:
                 continue
             image_paths.append(full_path)
 
-    
-    return image_paths 
+    return image_paths
+
 
 def analyze_image_metrics(detections, image_area, model_names, target_classes):
     # Инициализируем счётчики для каждого целевого класса
@@ -50,7 +52,7 @@ def analyze_image_metrics(detections, image_area, model_names, target_classes):
             transports_count += 1
             object_counts[det_name] += 1
         total_bbox_area += area
-    
+
     # Считаем общее количество транспортных средств
     total_vehicles = transports_count
     # Вычисляем плотность - долю изображения, занятую объектами
@@ -59,10 +61,10 @@ def analyze_image_metrics(detections, image_area, model_names, target_classes):
     avg_bbox_area = total_bbox_trasport_area / transports_count if total_bbox_trasport_area > 0 else 0
     # Формируем отчёт с метриками
     report = {
-        'total_vehicles': total_vehicles,
-        'density': round(density, 4),
-        'avg_bbox_area': round(avg_bbox_area, 2),
-        **object_counts
+        "total_vehicles": total_vehicles,
+        "density": round(density, 4),
+        "avg_bbox_area": round(avg_bbox_area, 2),
+        **object_counts,
     }
 
     return report
@@ -79,16 +81,12 @@ def find_highlight_examples(all_reports, top_n=3):
               самых показательных изображений.
     """
     if len(all_reports) < top_n:
-        return {r['filename']: r for r in all_reports}
-    
-    # sort by Самые загруженные и Самые плотные
-    sort_report = sorted(
-        all_reports,
-        key=lambda val: (val['total_vehicles'], val['density']),
-        reverse=True
-    )
+        return {r["filename"]: r for r in all_reports}
 
-    return {r['filename']: r for r in sort_report[:top_n]}
+    # sort by Самые загруженные и Самые плотные
+    sort_report = sorted(all_reports, key=lambda val: (val["total_vehicles"], val["density"]), reverse=True)
+
+    return {r["filename"]: r for r in sort_report[:top_n]}
 
 
 def generate_visualizations(model, examples_to_visualize, source_dir, output_dir, conf):
@@ -103,13 +101,7 @@ def generate_visualizations(model, examples_to_visualize, source_dir, output_dir
         img = results[0].plot()
 
         report = examples_to_visualize[example]
-        cv2.putText(
-            img,
-            report['scene'],
-            (10, 40),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            1, (0, 255, 0), 2
-        )
+        cv2.putText(img, report["scene"], (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
         full_img_out_path = os.path.join(output_dir, f"highlight_{example}")
         cv2.imwrite(full_img_out_path, img)
@@ -123,131 +115,121 @@ def generate_visualizations(model, examples_to_visualize, source_dir, output_dir
             f"Плотность объектов: {report['density']:.2%}\n"
             f"Средний размер объекта: {report['avg_bbox_area']:.0f} пикс."
         )
-        vis_report.append({
-            'path': full_img_out_path,
-            'report': example,
-            'stats': stats_text
-        })
+        vis_report.append({"path": full_img_out_path, "report": example, "stats": stats_text})
     return vis_report
 
 
 def classify_scene(report, thresholds):
-    count = report['total_vehicles']
-    density = report['density']
+    count = report["total_vehicles"]
+    density = report["density"]
 
     # Empty scene - нет транспортных средств
     if count == 0:
-        return 'Empty'
+        return "Empty"
 
     # Traffic Jam - много машин и высокая плотность (пробка)
-    if count >= thresholds['jam_count'] and density >= thresholds['jam_density']:
-        return 'Traffic Jam'
+    if count >= thresholds["jam_count"] and density >= thresholds["jam_density"]:
+        return "Traffic Jam"
 
     # Single Big Object - аномалия: 1-2 объекта создают высокую плотность
-    if count <= 2 and density > thresholds['single_density']:
-        return 'Single Big Object'
+    if count <= 2 and density > thresholds["single_density"]:
+        return "Single Big Object"
 
     # Heavy Traffic - много машин, но не пробка
-    if count >= thresholds['heavy_count']:
-        return 'Heavy Traffic'
+    if count >= thresholds["heavy_count"]:
+        return "Heavy Traffic"
 
     # Sparse Traffic - все остальные случаи (несколько машин, свободное движение)
-    return 'Sparse Traffic'
+    return "Sparse Traffic"
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Инструмент для анализа дорожного трафика на основе YOLOv8.",
-        formatter_class=argparse.RawTextHelpFormatter 
+        formatter_class=argparse.RawTextHelpFormatter,
     )
     parser.add_argument(
-        "mode", 
-        choices=['experiment', 'report'],
+        "mode",
+        choices=["experiment", "report"],
         help="Режим работы скрипта:\n"
-             " 'experiment' - запуск одного прогона для сбора CSV-статистики.\n"
-             " 'report' - полный цикл анализа с генерацией PDF-отчёта."
+        " 'experiment' - запуск одного прогона для сбора CSV-статистики.\n"
+        " 'report' - полный цикл анализа с генерацией PDF-отчёта.",
     )
     parser.add_argument(
-        "--conf", 
-        type=float, 
-        default=0.45, 
-        help="Порог уверенности (confidence) для детекции. (По умолчанию: 0.45)"
+        "--conf", type=float, default=0.45, help="Порог уверенности (confidence) для детекции. (По умолчанию: 0.45)"
     )
 
     args = parser.parse_args()
 
     # Выбор режима работы на основе аргументов
     thresholds = {
-        'jam_count': 10,       # Порог количества для пробки
-        'jam_density': 0.3,    # Порог плотности для пробки
-        'heavy_count': 5,      # Порог количества для плотного движения
-        'single_density': 0.15 # Порог плотности для крупного объекта
+        "jam_count": 10,  # Порог количества для пробки
+        "jam_density": 0.3,  # Порог плотности для пробки
+        "heavy_count": 5,  # Порог количества для плотного движения
+        "single_density": 0.15,  # Порог плотности для крупного объекта
     }
-    if args.mode == 'experiment':
+    if args.mode == "experiment":
         # Определяем константы для этого режима
-        TARGET_CLASSES = ['car', 'truck']
-        
-        # Получаем список валидных изображений
-        image_paths = get_valid_image_paths('data')
+        TARGET_CLASSES = ["car", "truck"]
 
-        model = YOLO('yolov8n.pt')
-        
+        # Получаем список валидных изображений
+        image_paths = get_valid_image_paths("data")
+
+        model = YOLO("yolov8n.pt")
+
         # Готовимся собирать отчёты со всех изображений
         all_reports = []
-        
+
         # Основной цикл обработки, обёрнутый в tqdm для наглядности
         for path in tqdm(image_paths, desc=f"Анализ [conf={args.conf}]"):
             try:
                 # Читаем изображение и получаем его размеры
                 image = cv2.imread(path)
                 h, w, _ = image.shape
-                
+
                 # Запускаем инференс с заданным `conf`
                 results = model(image, conf=args.conf, verbose=False)
-                
+
                 # Извлекаем метрики из результатов детекции
                 metrics = analyze_image_metrics(
-                    detections=results[0].boxes, 
-                    image_area=h*w, 
-                    model_names=model.names, 
-                    target_classes=TARGET_CLASSES
+                    detections=results[0].boxes,
+                    image_area=h * w,
+                    model_names=model.names,
+                    target_classes=TARGET_CLASSES,
                 )
 
-                metrics['scene'] = classify_scene(metrics, thresholds)
-                
+                metrics["scene"] = classify_scene(metrics, thresholds)
+
                 # Дополняем отчёт информацией об изображении
-                metrics['filename'] = os.path.basename(path)
+                metrics["filename"] = os.path.basename(path)
                 all_reports.append(metrics)
             except Exception as e:
                 print(f"Критическая ошибка при обработке файла {path}: {e}")
-        
+
         # Сохранение результатов в CSV-файл
         if all_reports:
             # Создаём папку для экспериментов, если она ещё не существует
-            os.makedirs('experiments', exist_ok=True)
+            os.makedirs("experiments", exist_ok=True)
             # Имя файла будет отражать параметр, с которым проводился эксперимент
-            csv_path = os.path.join('experiments', f'analysis_conf_{args.conf}.csv')
+            csv_path = os.path.join("experiments", f"analysis_conf_{args.conf}.csv")
 
-            with open(csv_path, 'w', newline='', encoding='utf-8') as f:
+            with open(csv_path, "w", newline="", encoding="utf-8") as f:
                 # Заголовки берём из ключей первого словаря в списке
                 writer = csv.DictWriter(f, fieldnames=all_reports[0].keys())
                 writer.writeheader()
                 writer.writerows(all_reports)
-        
-        highlight_examples = find_highlight_examples(
-            all_reports=all_reports,
-            top_n=3
-        )
+
+        highlight_examples = find_highlight_examples(all_reports=all_reports, top_n=3)
 
         vis_report = generate_visualizations(
             model=model,
             examples_to_visualize=highlight_examples,
-            source_dir='data',
-            output_dir='report_output',
-            conf=0.25
+            source_dir="data",
+            output_dir="report_output",
+            conf=0.25,
         )
         print(vis_report)
 
-    elif args.mode == 'report':
+    elif args.mode == "report":
         # Этот блок реализуем на следующих шагах
         pass
