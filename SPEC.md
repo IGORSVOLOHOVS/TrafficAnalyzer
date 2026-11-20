@@ -303,3 +303,149 @@ Manual checks (not run for this document):
 - Target hardware (CPU or GPU) and expected processing time per image.
 - Partly answered: `recipe.ps1 publish` copies the wheel under `$env:LAB_SHARE` (FR-33), and `.gitea/workflows/release.yaml:1-4` runs on every push to `release`. Open: who installs the wheel and how it is run there. Installed, it reads `data/` from the folder it is started in (`docs/install.md:9`), and `ttf/` the same way (`traffic_analyzer.py:154-155`), while the wheel carries only the module (`pyproject.toml:46`).
 - Partly answered: `CONTRIBUTING.md:4` names `test` as the branch to start from, and `release` is the remote default branch (`origin/HEAD`) carrying tag `v1.0.0`. Open: whether `dev` is still maintained.
+
+## Screenshots of requirements
+
+### FR-1 - The system shall accept one positional argument mode with the values experiment or report and reject other val…
+
+> Screenshot skipped: the code does not run here - the project runs on PyTorch-class libraries and trained weights, and torch is not installed here (multi-gigabyte); requirements whose code does not need torch will be revisited in a later pass.
+
+### FR-2 - The system shall accept an optional --conf float, default 0.45, and pass it as the detection confidence thresh…
+
+> Screenshot skipped: the code does not run here - the project runs on PyTorch-class libraries and trained weights, and torch is not installed here (multi-gigabyte); requirements whose code does not need torch will be revisited in a later pass.
+
+### FR-3 - The system shall print the mode name (experiment mode or report mode) and show a tqdm progress bar while proce…
+
+> Screenshot skipped: the code does not run here - the project runs on PyTorch-class libraries and trained weights, and torch is not installed here (multi-gigabyte); requirements whose code does not need torch will be revisited in a later pass.
+
+### FR-4 - The system shall list the source directory in sorted file-name order and keep only files whose extension, lowe…
+
+> Screenshot skipped: the code does not run here - the project runs on PyTorch-class libraries and trained weights, and torch is not installed here (multi-gigabyte); requirements whose code does not need torch will be revisited in a later pass.
+
+### FR-5 - The system shall skip files with an accepted extension that OpenCV cannot decode. Source: trafficanalyzer.py:2…
+
+> Screenshot skipped: the code does not run here - the project runs on PyTorch-class libraries and trained weights, and torch is not installed here (multi-gigabyte); requirements whose code does not need torch will be revisited in a later pass.
+
+### FR-6 - The system shall raise an exception when the source directory is empty. Source: trafficanalyzer.py:17-19. Veri…
+
+> Screenshot skipped: the code does not run here - the project runs on PyTorch-class libraries and trained weights, and torch is not installed here (multi-gigabyte); requirements whose code does not need torch will be revisited in a later pass.
+
+### FR-7 - The system shall load the weights yolov8n.pt from the working directory and run detection on each discovered i…
+
+> Screenshot skipped: the code does not run here - the project runs on PyTorch-class libraries and trained weights, and torch is not installed here (multi-gigabyte); requirements whose code does not need torch will be revisited in a later pass.
+
+### FR-8 - The system shall count, per image, the detections whose class name is in TARGETCLASSES = ["car", "truck"], ret…
+
+> Screenshot skipped: the code does not run here - the project runs on PyTorch-class libraries and trained weights, and torch is not installed here (multi-gigabyte); requirements whose code does not need torch will be revisited in a later pass.
+
+### FR-9 - The system shall compute density as the sum of wh of target-class boxes divided by image width times height, r…
+
+> Screenshot skipped: the code does not run here - the project runs on PyTorch-class libraries and trained weights, and torch is not installed here (multi-gigabyte); requirements whose code does not need torch will be revisited in a later pass.
+
+### FR-10 - The system shall compute avgbboxarea as the summed target-class box area divided by the target-class count, ro…
+
+> Screenshot skipped: the code does not run here - the project runs on PyTorch-class libraries and trained weights, and torch is not installed here (multi-gigabyte); requirements whose code does not need torch will be revisited in a later pass.
+
+### FR-11 - The system shall return density = 0 and avgbboxarea = 0 when no target-class box is found. Source: trafficanal…
+
+> Screenshot skipped: the code does not run here - the project runs on PyTorch-class libraries and trained weights, and torch is not installed here (multi-gigabyte); requirements whose code does not need torch will be revisited in a later pass.
+
+### FR-12 - The system shall add the image file name (filename) to each metrics record. Source: trafficanalyzer.py:254, 29…
+
+> Screenshot skipped: the code does not run here - the project runs on PyTorch-class libraries and trained weights, and torch is not installed here (multi-gigabyte); requirements whose code does not need torch will be revisited in a later pass.
+
+### FR-13 - The system shall catch any exception raised while processing one image, print the file path and the error, and…
+
+> Screenshot skipped: the code does not run here - the project runs on PyTorch-class libraries and trained weights, and torch is not installed here (multi-gigabyte); requirements whose code does not need torch will be revisited in a later pass.
+
+### FR-14 - The system shall classify each record by the first matching rule: Empty if totalvehicles == 0; Traffic Jam if …
+
+> Screenshot skipped: the code does not run here - the project runs on PyTorch-class libraries and trained weights, and torch is not installed here (multi-gigabyte); requirements whose code does not need torch will be revisited in a later pass.
+
+### FR-15 - In report mode the system shall use the thresholds jamcount = 10, jamdensity = 0.3, heavycount = 5, singledens…
+
+> Screenshot skipped: the code does not run here - the project runs on PyTorch-class libraries and trained weights, and torch is not installed here (multi-gigabyte); requirements whose code does not need torch will be revisited in a later pass.
+
+### FR-16 - In experiment mode the system shall write all records to experiments/analysisconf{conf}.csv (UTF-8, header fro…
+
+> Screenshot skipped: the code does not run here - the project runs on PyTorch-class libraries and trained weights, and torch is not installed here (multi-gigabyte); requirements whose code does not need torch will be revisited in a later pass.
+
+### FR-17 - In experiment mode the system shall not classify scenes, draw annotations or build a PDF. Source: trafficanaly…
+
+> Screenshot skipped: the code does not run here - the project runs on PyTorch-class libraries and trained weights, and torch is not installed here (multi-gigabyte); requirements whose code does not need torch will be revisited in a later pass.
+
+### FR-18 - The system shall write no CSV when no record was produced. Source: trafficanalyzer.py:259. Verification: no te…
+
+> Screenshot skipped: the code does not run here - the project runs on PyTorch-class libraries and trained weights, and torch is not installed here (multi-gigabyte); requirements whose code does not need torch will be revisited in a later pass.
+
+### FR-19 - The system shall select highlight examples by sorting records by (totalvehicles, density) in descending order …
+
+> Screenshot skipped: the code does not run here - the project runs on PyTorch-class libraries and trained weights, and torch is not installed here (multi-gigabyte); requirements whose code does not need torch will be revisited in a later pass.
+
+### FR-20 - For each highlight the system shall re-run detection on data/{filename} at --conf, draw the detections, write …
+
+> Screenshot skipped: the code does not run here - the project runs on PyTorch-class libraries and trained weights, and torch is not installed here (multi-gigabyte); requirements whose code does not need torch will be revisited in a later pass.
+
+### FR-21 - For each highlight the system shall build a text block with file name, scene type, total vehicles, car and tru…
+
+> Screenshot skipped: the code does not run here - the project runs on PyTorch-class libraries and trained weights, and torch is not installed here (multi-gigabyte); requirements whose code does not need torch will be revisited in a later pass.
+
+### FR-22 - The system shall build the PDF with PDFReport, a subclass of FPDF, which prints on every page a centred header…
+
+> Screenshot skipped: the code does not run here - the project runs on PyTorch-class libraries and trained weights, and torch is not installed here (multi-gigabyte); requirements whose code does not need torch will be revisited in a later pass.
+
+### FR-23 - The system shall write a summary section with the number of processed images, the threshold used, total vehicl…
+
+> Screenshot skipped: the code does not run here - the project runs on PyTorch-class libraries and trained weights, and torch is not installed here (multi-gigabyte); requirements whose code does not need torch will be revisited in a later pass.
+
+### FR-24 - The system shall add one page per highlight, ordered by density descending, titled Пример #{i}: {filename}, wi…
+
+> Screenshot skipped: the code does not run here - the project runs on PyTorch-class libraries and trained weights, and torch is not installed here (multi-gigabyte); requirements whose code does not need torch will be revisited in a later pass.
+
+### FR-25 - The system shall save the PDF as reportoutput/trafficanalysisreport.pdf and print its path. Source: trafficana…
+
+> Screenshot skipped: the code does not run here - the project runs on PyTorch-class libraries and trained weights, and torch is not installed here (multi-gigabyte); requirements whose code does not need torch will be revisited in a later pass.
+
+### FR-26 - The system shall use ttf/DejaVuSans.ttf and ttf/DejaVuSans-Bold.ttf as the PDF font when both files exist, and…
+
+> Screenshot skipped: the code does not run here - the project runs on PyTorch-class libraries and trained weights, and torch is not installed here (multi-gigabyte); requirements whose code does not need torch will be revisited in a later pass.
+
+### FR-27 - In report mode the system shall exit without producing output when no record was produced. Source: trafficanal…
+
+> Screenshot skipped: the code does not run here - the project runs on PyTorch-class libraries and trained weights, and torch is not installed here (multi-gigabyte); requirements whose code does not need torch will be revisited in a later pass.
+
+### FR-28 - recipe.ps1 shall accept one verb out of build, install, uninstall, clean, run, publish, info, test, reject any…
+
+> Screenshot pending: this requirement is about the repository tooling (recipe.ps1, git hooks, CI), which does run on this machine; it will be captured in a later pass.
+
+### FR-29 - The verb run shall start uv run --frozen python trafficanalyzer.py with the arguments that follow the verb and…
+
+> Screenshot pending: this requirement is about the repository tooling (recipe.ps1, git hooks, CI), which does run on this machine; it will be captured in a later pass.
+
+### FR-30 - The verb test shall stop with exit code 1 and the message Version mismatch when $Version (recipe.ps1:13) diffe…
+
+> Screenshot pending: this requirement is about the repository tooling (recipe.ps1, git hooks, CI), which does run on this machine; it will be captured in a later pass.
+
+### FR-31 - pytest shall collect tests/test.py with -q --cov=. --cov-report=term --cov-fail-under=0; mypy shall check traf…
+
+> Screenshot pending: this requirement is about the repository tooling (recipe.ps1, git hooks, CI), which does run on this machine; it will be captured in a later pass.
+
+### FR-32 - The verb build shall write a wheel to dist with uv build --wheel --out-dir dist; the wheel carries the single …
+
+> Screenshot pending: this requirement is about the repository tooling (recipe.ps1, git hooks, CI), which does run on this machine; it will be captured in a later pass.
+
+### FR-33 - The verb publish shall exit with code 1 and the message LABSHARE is not set, so there is nowhere to publish to…
+
+> Screenshot pending: this requirement is about the repository tooling (recipe.ps1, git hooks, CI), which does run on this machine; it will be captured in a later pass.
+
+### FR-34 - The verb clean shall delete dist, build, out and .coverage; install and uninstall shall print that there is no…
+
+> Screenshot pending: this requirement is about the repository tooling (recipe.ps1, git hooks, CI), which does run on this machine; it will be captured in a later pass.
+
+### FR-35 - Before any verb, the recipe shall load the NAME=value lines of .claude/.env, when that file exists, into envir…
+
+> Screenshot pending: this requirement is about the repository tooling (recipe.ps1, git hooks, CI), which does run on this machine; it will be captured in a later pass.
+
+### FR-36 - The workflow test shall run on every push to test, on the schedule 0 3 and on manual start, and shall run .\re…
+
+> Screenshot pending: this requirement is about the repository tooling (recipe.ps1, git hooks, CI), which does run on this machine; it will be captured in a later pass.
